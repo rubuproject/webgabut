@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beyond the Horizon | Cinematic Experience</title>
+    <style>
+        /* RESET & BASE */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+        }
+
+        /* VIDEO BACKGROUND - FULLSCREEN */
+        .video-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+        }
+
+        #bg-video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 1;
+            transition: opacity 1s ease;
+        }
+
+        .video-fallback {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #000428, #004e92);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.2rem;
+        }
+
+        /* TRANSPARENT OVERLAY PATTERN - HANYA DI AREA KONTEN */
+        .content-overlay {
+            position: fixed;
+            right: 0;
+            top: 0;
+            height: 100vh;
+            width: 30%; /* DIPERKECIL DARI 38% */
+            min-width: 350px;
+            max-width: 500px;
+            background: linear-gradient(
+                to left,
+                rgba(255, 255, 255, 0.98) 0%,
+                rgba(255, 255, 255, 0.95) 30%,
+                rgba(255, 255, 255, 0.85) 100%
+            );
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            border-left: 1px solid rgba(255, 255, 255, 0.3);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            transform: translateX(50px);
+            opacity: 0;
+            animation: slideIn 1.2s cubic-bezier(0.22, 0.61, 0.36, 1) 0.4s forwards;
+        }
+
+        /* EFEK GRADIEN TRANSPARAN DI PINGGIR */
+        .content-overlay::before {
+            content: '';
+            position: absolute;
+            left: -60px;
+            top: 0;
+            height: 100%;
+            width: 60px;
+            background: linear-gradient(
+                to right,
+                transparent 0%,
+                rgba(255, 255, 255, 0.3) 30%,
+                rgba(255, 255, 255, 0.6) 100%
+            );
+            pointer-events: none;
+        }
+
+        @media (max-width: 768px) {
+            .content-overlay {
+                width: 90%;
+                min-width: unset;
+                max-width: unset;
+                border-left: none;
+                border-radius: 0;
+                background: rgba(255, 255, 255, 0.95);
+            }
+            
+            .content-overlay::before {
+                display: none;
+            }
+        }
+
+        /* KONTEN DALAM OVERLAY */
+        .content {
+            color: #000;
+            max-width: 380px; /* DIPERKECIL */
+            padding: 0 3rem; /* DIPERKECIL DARI 4rem */
+            margin-left: 0;
+        }
+
+        .title-line {
+            font-size: 0.85rem; /* DIPERKECIL */
+            letter-spacing: 4px; /* DIPERKECIL */
+            text-transform: uppercase;
+            color: rgba(0, 0, 0, 0.6);
+            margin-bottom: 0.8rem;
+            opacity: 0;
+            animation: fadeUp 0.8s ease 0.6s forwards;
+            font-weight: 500;
+        }
+
+        .main-title {
+            font-size: 3rem; /* DIPERKECIL DARI 4.5rem */
+            font-weight: 700;
+            line-height: 1;
+            margin-bottom: 2rem; /* DIPERKECIL */
+            background: linear-gradient(45deg, #000 30%, #1e40af 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            opacity: 0;
+            animation: fadeUp 0.8s ease 0.8s forwards;
+        }
+
+        @media (max-width: 768px) {
+            .main-title {
+                font-size: 2.5rem;
+            }
+        }
+
+        .description {
+            font-size: 1rem; /* DIPERKECIL */
+            line-height: 1.7;
+            color: rgba(0, 0, 0, 0.8);
+            margin-bottom: 2.5rem; /* DIPERKECIL */
+            font-weight: 300;
+            opacity: 0;
+            animation: fadeUp 0.8s ease 1s forwards;
+        }
+
+        .description p {
+            margin-bottom: 1rem;
+        }
+
+        /* CTA BUTTON - WARNI GELAP */
+        .cta-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            padding: 1rem 2.5rem; /* DIPERKECIL SEDIKIT */
+            background: rgba(0, 0, 0, 0.9);
+            border: 1px solid rgba(0, 0, 0, 0.2);
+            color: white;
+            font-size: 1rem;
+            font-weight: 400;
+            letter-spacing: 0.5px;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            opacity: 0;
+            animation: fadeUp 0.8s ease 1.2s forwards;
+            cursor: pointer;
+        }
+
+        .cta-button:hover {
+            background: rgba(0, 0, 0, 1);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .cta-button::after {
+            content: '→';
+            font-size: 1.2rem;
+            transition: transform 0.3s ease;
+        }
+
+        .cta-button:hover::after {
+            transform: translateX(5px);
+        }
+
+        /* AUDIO CONTROLS - DI DALAM OVERLAY */
+        .audio-controls {
+            position: absolute;
+            bottom: 3rem;
+            left: 3rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+            align-items: flex-start;
+            z-index: 100;
+        }
+
+        .audio-btn {
+            width: 45px; /* DIPERKECIL */
+            height: 45px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            opacity: 0;
+            animation: fadeIn 0.8s ease 1.4s forwards;
+        }
+
+        .audio-btn:hover {
+            background: rgba(0, 0, 0, 1);
+            transform: scale(1.05);
+        }
+
+        .audio-icon {
+            font-size: 1.1rem;
+        }
+
+        .audio-btn.playing .audio-icon::before {
+            content: '⏸';
+        }
+
+        .audio-btn:not(.playing) .audio-icon::before {
+            content: '▶';
+        }
+
+        /* AUDIO INFO - DI DALAM OVERLAY */
+        .audio-info {
+            background: rgba(0, 0, 0, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 0.8rem 1rem;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 0.85rem;
+            opacity: 0;
+            animation: fadeIn 0.8s ease 1.6s forwards;
+            max-width: 220px;
+        }
+
+        .audio-title {
+            font-weight: 500;
+            margin-bottom: 0.3rem;
+            color: #93c5fd;
+            font-size: 0.9rem;
+        }
+
+        .audio-status {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        /* ANIMATIONS */
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* UTILITIES */
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Video Background - FULLSCREEN -->
+    <div class="video-container">
+        <video id="bg-video" autoplay muted loop playsinline>
+            <source src="paper.mp4" type="video/mp4">
+            <source src="media/cinematic-bg.webm" type="video/webm">
+            Your browser does not support the video tag.
+        </video>
+        <div class="video-fallback" id="video-fallback">
+            <p>Cinematic Experience Loading...</p>
+        </div>
+    </div>
+
+    <!-- Audio Element -->
+    <audio id="background-audio" loop preload="metadata">
+        <source src="titok.mp4" type="audio/mp4">
+        Your browser does not support the audio element.
+    </audio>
+
+    <!-- Content Overlay (White Area) -->
+    <div class="content-overlay">
+        <div class="content">
+            <div class="title-line">BEYOND THE</div>
+            <h1 class="main-title">Horizon</h1>
+            <div class="description">
+                <p>Experience cinematic visuals in a</p>
+                <p>modern web layout. Where every pixel</p>
+                <p>tells a story and performance meets</p>
+                <p>breathtaking design. The future of digital</p>
+                <p>experiences starts here.</p>
+            </div>
+            <button class="cta-button" id="startExperience">Start Experience</button>
+        </div>
+
+        <!-- Audio Controls INSIDE Overlay -->
+        <div class="audio-controls">
+            <div class="audio-info">
+                <div class="audio-title">Background Music</div>
+                <div class="audio-status" id="audioStatus">Paused: titok.mp4</div>
+            </div>
+            <button class="audio-btn" id="audioControl">
+                <span class="audio-icon"></span>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const bgVideo = document.getElementById('bg-video');
+        const videoFallback = document.getElementById('video-fallback');
+        const backgroundAudio = document.getElementById('background-audio');
+        const audioControl = document.getElementById('audioControl');
+        const audioStatus = document.getElementById('audioStatus');
+        const startExperienceBtn = document.getElementById('startExperience');
+
+        // State
+        let isAudioPlaying = false;
+        let userInteracted = false;
+
+        // Initialize audio dengan volume rendah
+        backgroundAudio.volume = 0.3;
+
+        // Video Load Handler
+        bgVideo.addEventListener('loadeddata', () => {
+            console.log('Video loaded successfully');
+            bgVideo.style.opacity = '1';
+        });
+
+        bgVideo.addEventListener('error', () => {
+            console.log('Video failed to load');
+            bgVideo.style.display = 'none';
+            videoFallback.style.display = 'flex';
+        });
+
+        // Audio Load Handler
+        backgroundAudio.addEventListener('loadeddata', () => {
+            console.log('Audio loaded: titok.mp4');
+            audioStatus.textContent = 'Ready: titok.mp4';
+        });
+
+        backgroundAudio.addEventListener('error', (e) => {
+            console.error('Error loading audio:', e);
+            audioStatus.textContent = 'Error loading audio file';
+            audioStatus.style.color = '#f87171';
+        });
+
+        // Audio Control Functions
+        function toggleAudio() {
+            if (!userInteracted) {
+                userInteracted = true;
+                // Unlock audio context
+                const silentAudio = new Audio();
+                silentAudio.play().then(() => {
+                    silentAudio.pause();
+                    silentAudio.remove();
+                }).catch(e => console.log('Audio context unlocked'));
+            }
+
+            if (isAudioPlaying) {
+                backgroundAudio.pause();
+                audioControl.classList.remove('playing');
+                audioStatus.textContent = 'Paused: titok.mp4';
+            } else {
+                const playPromise = backgroundAudio.play();
+                
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        isAudioPlaying = true;
+                        audioControl.classList.add('playing');
+                        audioStatus.textContent = 'Playing: titok.mp4';
+                    }).catch(error => {
+                        console.log('Audio playback failed:', error);
+                        showAudioError();
+                    });
+                }
+            }
+            isAudioPlaying = !isAudioPlaying;
+        }
+
+        function showAudioError() {
+            audioStatus.textContent = 'Click to enable audio';
+            audioStatus.style.color = '#fbbf24';
+            
+            setTimeout(() => {
+                audioStatus.textContent = 'Ready: titok.mp4';
+                audioStatus.style.color = 'rgba(255, 255, 255, 0.7)';
+            }, 3000);
+        }
+
+        // First Interaction Handler
+        function handleFirstInteraction() {
+            if (!userInteracted) {
+                userInteracted = true;
+                console.log('First user interaction registered');
+            }
+        }
+
+        // Event Listeners
+        audioControl.addEventListener('click', toggleAudio);
+        startExperienceBtn.addEventListener('click', handleFirstInteraction);
+
+        // Global interaction listener
+        document.addEventListener('click', function initInteraction() {
+            handleFirstInteraction();
+            document.removeEventListener('click', initInteraction);
+        }, { once: true });
+
+        document.addEventListener('touchstart', function initTouch() {
+            handleFirstInteraction();
+            document.removeEventListener('touchstart', initTouch);
+        }, { once: true });
+
+        // Page visibility change
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden && isAudioPlaying) {
+                backgroundAudio.pause();
+            } else if (!document.hidden && isAudioPlaying) {
+                backgroundAudio.play().catch(console.error);
+            }
+        });
+
+        // Audio time update
+        backgroundAudio.addEventListener('timeupdate', () => {
+            if (isAudioPlaying && !isNaN(backgroundAudio.duration)) {
+                const minutes = Math.floor(backgroundAudio.currentTime / 60);
+                const seconds = Math.floor(backgroundAudio.currentTime % 60);
+                const durationMin = Math.floor(backgroundAudio.duration / 60);
+                const durationSec = Math.floor(backgroundAudio.duration % 60);
+                
+                if (durationMin > 0) {
+                    audioStatus.textContent = 
+                        `Playing: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+                }
+            }
+        });
+
+        // Start Experience Button
+        startExperienceBtn.addEventListener('click', function() {
+            const originalText = this.textContent;
+            
+            this.textContent = 'Launching...';
+            this.style.opacity = '0.8';
+            
+            // Auto-start audio jika belum dimulai
+            if (!isAudioPlaying) {
+                setTimeout(() => {
+                    toggleAudio();
+                }, 300);
+            }
+            
+            // Video enhancement effect
+            bgVideo.style.filter = 'brightness(1.1) saturate(1.1)';
+            bgVideo.style.transition = 'filter 0.8s ease';
+            
+            // Simulate loading
+            setTimeout(() => {
+                this.textContent = 'Welcome';
+                this.style.background = 'linear-gradient(45deg, #1e40af, #3b82f6)';
+                this.style.borderColor = 'transparent';
+                
+                setTimeout(() => {
+                    this.textContent = originalText;
+                    this.style.background = '';
+                    this.style.borderColor = '';
+                    this.style.opacity = '1';
+                    bgVideo.style.filter = '';
+                }, 1500);
+            }, 800);
+        });
+
+        // Video fade in on load
+        window.addEventListener('load', () => {
+            bgVideo.style.opacity = '0';
+            setTimeout(() => {
+                bgVideo.style.opacity = '1';
+            }, 200);
+            
+            // Cek status audio
+            setTimeout(() => {
+                if (backgroundAudio.readyState >= 2) {
+                    audioStatus.textContent = 'Paused: titok.mp4';
+                }
+            }, 1000);
+        });
+
+        // Auto-start audio setelah beberapa detik
+        setTimeout(() => {
+            if (userInteracted && !isAudioPlaying && backgroundAudio.readyState >= 2) {
+                toggleAudio();
+            }
+        }, 2000);
+    </script>
+</body>
+</html>
